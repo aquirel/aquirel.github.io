@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <link rel="icon" sizes="any" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAV9JREFUOI2tky+LAlEUxX+DCxaDCoJpskXEJFgsznSbYBkQrPoBZKpR/AAi2MRoUMEwKGgWFI36skHm2e+W3VVxXHeXvfX8ee+8cx/85yilRCklv9EYt+JWq8V8PqdQKASSI5EItm1TLBaNQIPFYsF+v39q4Ps+/X6fWCxGr9czHgivInzitVpNut2uALzdEkzTNDabjaxWqwcTrTW2bRMOhxmNRjiOw53BbDaTRqNBs9kkGo0+nK61JplMcj6fATidTldwu91KJpOR4/H4bQOfETzPk0qlcuVWq1WZTqfykxqVUpLNZmW9Xgt8tJDL5WQ4HOK6Lp7nkc/nA8W+73M4HGi321iWZXy9QSKRAKBUKpFOp7/dg1QqZViWdQ8MBgMpl8svIwThX8tQr9dlt9vhOM7TFlzXJRQKMZlMME3zGgGg0+kYy+VSxuMxWutAg3g8zuVyeXbB1/OXz/Zy3gHKpcgy1WAXoAAAAABJRU5ErkJggg==" />
+
+        <title>Among Us Cabling Tool</title>
+
+        <style type="text/css">
+            html {
+                background: black;
+                color: white;
+                text-align: center;
+            }
+
+            div.wiring-container {
+                display: inline-block;
+                position: relative;
+                height: 150px;
+            }
+
+            div.wiring-container > div {
+                padding: 0;
+                margin: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            div.wiring-panel {
+                display: flex;
+                float: left;
+                background: dimgrey;
+                border-radius: 10px;
+                width: 100px;
+                height: 100px;
+                justify-content: center;
+                align-items: center;
+                margin: 5px;
+                text-align: center;
+                z-index: 1;
+                font-weight: bold;
+                font-size: 10pt;
+            }
+
+            div.wiring-panel:hover {
+                background: grey;
+            }
+
+            div.wiring-panel-selected {
+                background: darkslategrey;
+            }
+
+            span.long-panel-name {
+                transform: rotate(45deg);
+            }
+
+            div.wiring-panel-arrow {
+                display: inline-block;
+                float: left;
+            }
+
+            div.wiring-task {
+                display: inline-block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                background: lightslategrey;
+                border-radius: 10px;
+                width: 110px;
+                height: 150px;
+            }
+
+            div.wiring-task-dragger {
+                position: absolute;
+                left: 5px;
+                right: 5px;
+                bottom: 5px;
+                height: 35px;
+                line-height: 35px;
+                background: darkgreen;
+                border-radius: 10px;
+                cursor: all-scroll;
+                text-align: center;
+                font-weight: bold;
+            }
+
+            div.wiring-task-dragger:hover {
+                background: green;
+            }
+
+            div.wiring-task-dragger-hover {
+                background: green;
+            }
+
+            div.wiring-panel-arrow {
+                display: inline-block;
+                float: left;
+                background: dimgrey;
+                border-radius: 10px;
+                width: 10px;
+                height: 60px;
+                line-height: 60px;
+                font-weight: bold;
+                text-align: center;
+            }
+        </style>
+
+        <script type="application/javascript">
+            <!--
+                function onLoad(e) {
+                    // console.log("onLoad()");
+
+                    window.selectedTaskDraggerElement = null;
+
+                    window.maps = [];
+                    var mapCount = parseInt(document.body.dataset["mapCount"]);
+
+                    for (var mapIndex = 0; mapIndex < mapCount; ++mapIndex) {
+                        var mapElement = document.getElementById("map" + mapIndex);
+
+                        var mapWiringPanels = mapElement.getElementsByClassName("wiring-panel");
+                        
+                        var mapWiringTasks = [];
+                        var wiringTaskElements = mapElement.getElementsByClassName("wiring-task");
+                        for (var taskElementIndex = 0; taskElementIndex < wiringTaskElements.length; ++taskElementIndex) {
+                            var taskIndex = parseInt(wiringTaskElements[taskElementIndex].dataset["taskIndex"]);
+                            mapWiringTasks[taskIndex] = {
+                                panelIndex: parseInt(wiringTaskElements[taskElementIndex].dataset["panelIndex"]),
+                                taskElement: wiringTaskElements[taskElementIndex]
+                            };
+                        }
+
+                        window.maps[mapIndex] = {
+                            wiringPanels: mapWiringPanels,
+                            wiringTasks: mapWiringTasks
+                        };
+                    }
+
+                    document.onmouseup = onTaskDraggerMouseUp;
+                    document.onmousemove = onTaskDraggerMouseMove;
+                }
+
+                function onTaskDraggerMouseDown(e) {
+                    // console.log("onTaskDraggerMouseDown(): e.button: " + e.button + ", e.buttons: " + e.buttons + ", e.which: " + e.which);
+
+                    if (1 == e.which) {
+                        e.preventDefault();
+                        window.selectedTaskDraggerElement = e.target;
+                        window.selectedTaskDraggerElement.classList.add("wiring-task-dragger-hover");
+                    }
+                }
+
+                function onTaskDraggerMouseUp(e) {
+                    // console.log("onTaskDraggerMouseUp(): e.button: " + e.button + ", e.buttons: " + e.buttons + ", e.which: " + e.which);
+
+                    if (1 == e.which && null != window.selectedTaskDraggerElement) {
+                        window.selectedTaskDraggerElement.classList.remove("wiring-task-dragger-hover");
+                        window.selectedTaskDraggerElement = null;
+                    }
+                }
+                
+                function onTaskDraggerMouseMove(e) {
+                    // console.log("onTaskDraggerMouseMove(): e.button: " + e.button + ", e.buttons: " + e.buttons + ", e.which: " + e.which);
+
+                    if (1 != e.which || null == window.selectedTaskDraggerElement) {
+                        return;
+                    }
+                    
+                    var selectedWiringTaskElement = window.selectedTaskDraggerElement.parentElement;
+                    var selectedWiringTaskElementClientRect = selectedWiringTaskElement.getBoundingClientRect();
+                    if ((e.movementX > 0 && e.clientX < selectedWiringTaskElementClientRect.left) ||
+                        (e.movementX < 0 && e.clientX > selectedWiringTaskElementClientRect.right)) {
+                        return;
+                    }
+
+                    var originalPosition;
+                    if (selectedWiringTaskElement.dataset.hasOwnProperty("potentialNewPosition")) {
+                        originalPosition = parseInt(selectedWiringTaskElement.dataset["potentialNewPosition"]);
+                    }
+                    else {
+                        originalPosition = selectedWiringTaskElement.offsetLeft
+                    }
+
+                    var newPosition = originalPosition + e.movementX;
+                    if (0 > newPosition) {
+                        newPosition = 0;
+                    }
+                    else if (newPosition + selectedWiringTaskElement.clientWidth >= selectedWiringTaskElement.parentElement.clientWidth) {
+                        newPosition = selectedWiringTaskElement.parentElement.clientWidth - selectedWiringTaskElement.clientWidth; 
+                    }
+
+                    var mapIndex = parseInt(selectedWiringTaskElement.dataset["mapIndex"]);
+                    var newPanelIndex = snapPositionToNearestWiringPanel(newPosition, mapIndex);
+                    var taskIndex = parseInt(selectedWiringTaskElement.dataset["taskIndex"]);
+                    moveWiringTask(taskIndex, newPanelIndex, mapIndex);
+                    selectedWiringTaskElement.dataset["potentialNewPosition"] = newPosition;
+                }
+
+                function snapPositionToNearestWiringPanel(position, mapIndex) {
+                    var nearestPanelIndex = 0;
+                    var nearestPanelDistance = -1;
+                    for (var i = 0; i < window.maps[mapIndex].wiringPanels.length; ++i) {
+                        var currentPanelDistance = Math.abs(position - window.maps[mapIndex].wiringPanels[i].offsetLeft);
+                        if (currentPanelDistance < nearestPanelDistance || -1 == nearestPanelDistance) {
+                            nearestPanelIndex = i;
+                            nearestPanelDistance = currentPanelDistance;
+                        }
+                    }
+
+                    return nearestPanelIndex;
+                }
+
+                function moveWiringTask(taskIndex, newPanelIndex, mapIndex) {
+                    if (newPanelIndex < 0 || newPanelIndex >= window.maps[mapIndex].wiringPanels.length) {
+                        return false;
+                    }
+
+                    var currentPanelIndex = window.maps[mapIndex].wiringTasks[taskIndex].panelIndex;
+                    var taskDisplacement = newPanelIndex - currentPanelIndex;
+
+                    if (0 == taskDisplacement) {
+                        return false;
+                    }
+
+                    if (taskIndex > 0 && taskDisplacement < 0 && window.maps[mapIndex].wiringTasks[taskIndex - 1].panelIndex >= newPanelIndex) {
+                        if (!moveWiringTask(taskIndex - 1, newPanelIndex - 1, mapIndex)) {
+                            return false;
+                        }
+                    }
+                    else if (taskIndex < window.maps[mapIndex].wiringTasks.length - 1 && taskDisplacement > 0 && window.maps[mapIndex].wiringTasks[taskIndex + 1].panelIndex <= newPanelIndex) {
+                        if (!moveWiringTask(taskIndex + 1, newPanelIndex + 1, mapIndex)) {
+                            return false;
+                        }
+                    }
+
+                    window.maps[mapIndex].wiringPanels[currentPanelIndex].classList.remove("wiring-panel-selected");
+                    window.maps[mapIndex].wiringTasks[taskIndex].panelIndex = newPanelIndex;
+                    window.maps[mapIndex].wiringPanels[newPanelIndex].classList.add("wiring-panel-selected");
+                    window.maps[mapIndex].wiringTasks[taskIndex].taskElement.dataset["panelIndex"] = newPanelIndex;
+                    delete window.maps[mapIndex].wiringTasks[taskIndex].taskElement.dataset["potentialNewPosition"];
+                    var actualNewPosition = newPanelIndex * (window.maps[mapIndex].wiringPanels[1].offsetLeft - window.maps[mapIndex].wiringPanels[0].offsetLeft);
+                    window.maps[mapIndex].wiringTasks[taskIndex].taskElement.style.left = actualNewPosition + "px";
+                    return true;
+                }
+            -->
+        </script>
+    </head>
+
+    <body onload="onLoad(event)" data-map-count="3">
+        <div id="map0">
+            <h1>The Skeld</h1>
+            <div class="wiring-container" style="width: calc(6 * (100px + 10px) + 5 * 10px);">
+                <div>
+                    <div class="wiring-panel wiring-panel-selected">Electrical</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel wiring-panel-selected">Storage</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel wiring-panel-selected">Admin</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel">Navigation</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel">Cafeteria</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel">Security</div>
+
+                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="0">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#1</div>
+                    </div>
+
+                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="0">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#2</div>
+                    </div>
+
+                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="0">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="map1">
+            <h1>MIRA HQ</h1>
+            <div class="wiring-container" style="width: calc(5 * (100px + 10px) + 4 * 10px);">
+                <div>
+                    <div class="wiring-panel wiring-panel-selected">Storage</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel wiring-panel-selected">Hallway</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel wiring-panel-selected">Locker</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel">Greenhouse</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel">Laboratory</div>
+
+                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="1">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#1</div>
+                    </div>
+
+                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="1">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#2</div>
+                    </div>
+
+                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="1">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="map2">
+            <h1>Polus</h1>
+            <div class="wiring-container" style="width: calc(6 * (100px + 10px) + 5 * 10px);">
+                <div>
+                    <div class="wiring-panel wiring-panel-selected">Electrical</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel wiring-panel-selected">O2</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel wiring-panel-selected">Office</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel"><span class="long-panel-name">Decontamination</span></div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel">Laboratory (right)</div>
+                    <div class="wiring-panel-arrow">&#x25b6;</div>
+                    <div class="wiring-panel">Laboratory (left)</div>
+
+                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="2">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#1</div>
+                    </div>
+
+                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="2">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#2</div>
+                    </div>
+
+                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="2">
+                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
