@@ -42,7 +42,7 @@
                 text-align: center;
                 z-index: 1;
                 font-weight: bold;
-                font-size: 10pt;
+                font-size: 11pt;
             }
 
             div.wiring-panel:hover {
@@ -54,7 +54,8 @@
             }
 
             span.long-panel-name {
-                transform: rotate(45deg);
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             div.wiring-panel-arrow {
@@ -103,6 +104,7 @@
                 width: 10px;
                 height: 60px;
                 line-height: 60px;
+                font-size: 10pt;
                 font-weight: bold;
                 text-align: center;
             }
@@ -320,11 +322,11 @@
                     <div class="wiring-panel-arrow">&#x25b6;</div>
                     <div class="wiring-panel wiring-panel-selected">Office</div>
                     <div class="wiring-panel-arrow">&#x25b6;</div>
-                    <div class="wiring-panel"><span class="long-panel-name">Decontamination</span></div>
+                    <div class="wiring-panel"><span class="long-panel-name" title="Decontamination">Decontamination</span></div>
                     <div class="wiring-panel-arrow">&#x25b6;</div>
-                    <div class="wiring-panel">Laboratory (right)</div>
+                    <div class="wiring-panel">Laboratory<br />(right)</div>
                     <div class="wiring-panel-arrow">&#x25b6;</div>
-                    <div class="wiring-panel">Laboratory (left)</div>
+                    <div class="wiring-panel">Laboratory<br />(left)</div>
 
                     <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="2">
                         <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#1</div>
