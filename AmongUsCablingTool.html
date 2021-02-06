@@ -15,6 +15,10 @@
                 text-align: center;
             }
 
+            body.dragged {
+                cursor: grabbing !important;
+            }
+
             div.wiring-container {
                 display: inline-block;
                 position: relative;
@@ -40,7 +44,6 @@
                 align-items: center;
                 margin: 5px;
                 text-align: center;
-                z-index: 1;
                 font-weight: bold;
                 font-size: 11pt;
             }
@@ -48,19 +51,9 @@
             div.wiring-panel:hover {
                 background: grey;
             }
-
-            div.wiring-panel-selected {
-                background: darkslategrey;
-            }
-
             span.long-panel-name {
                 overflow: hidden;
                 text-overflow: ellipsis;
-            }
-
-            div.wiring-panel-arrow {
-                display: inline-block;
-                float: left;
             }
 
             div.wiring-task {
@@ -68,10 +61,21 @@
                 position: absolute;
                 left: 0;
                 top: 0;
-                background: lightslategrey;
+                background: slategrey;
                 border-radius: 10px;
+                cursor: grab;
                 width: 110px;
                 height: 150px;
+                z-index: 1;
+            }
+
+            div.wiring-task:hover {
+                background: lightslategrey;
+            }
+
+            div.wiring-task-dragged {
+                cursor: grabbing !important;
+                outline: 2px dashed green;
             }
 
             div.wiring-task-dragger {
@@ -83,7 +87,6 @@
                 line-height: 35px;
                 background: darkgreen;
                 border-radius: 10px;
-                cursor: all-scroll;
                 text-align: center;
                 font-weight: bold;
             }
@@ -94,6 +97,21 @@
 
             div.wiring-task-dragger-hover {
                 background: green;
+            }
+
+            div.wiring-task-panel {
+                display: flex;
+                float: left;
+                background: darkslategrey;
+                border-radius: 10px;
+                width: 100px;
+                height: 100px;
+                justify-content: center;
+                align-items: center;
+                margin: 5px;
+                text-align: center;
+                font-weight: bold;
+                font-size: 11pt;
             }
 
             div.wiring-panel-arrow {
@@ -150,8 +168,10 @@
 
                     if (1 == e.which) {
                         e.preventDefault();
-                        window.selectedTaskDraggerElement = e.target;
-                        window.selectedTaskDraggerElement.classList.add("wiring-task-dragger-hover");
+                        window.selectedTaskDraggerElement = e.currentTarget;
+                        window.selectedTaskDraggerElement.classList.add("wiring-task-dragged");
+                        window.document.body.classList.add("dragged");
+                        window.selectedTaskDraggerElement.lastElementChild.classList.add("wiring-task-dragger-hover");
                     }
                 }
 
@@ -159,7 +179,10 @@
                     // console.log("onTaskDraggerMouseUp(): e.button: " + e.button + ", e.buttons: " + e.buttons + ", e.which: " + e.which);
 
                     if (1 == e.which && null != window.selectedTaskDraggerElement) {
-                        window.selectedTaskDraggerElement.classList.remove("wiring-task-dragger-hover");
+                        e.preventDefault();
+                        window.selectedTaskDraggerElement.classList.remove("wiring-task-dragged");
+                        window.document.body.classList.remove("dragged");
+                        window.selectedTaskDraggerElement.lastElementChild.classList.remove("wiring-task-dragger-hover");
                         window.selectedTaskDraggerElement = null;
                     }
                 }
@@ -170,8 +193,10 @@
                     if (1 != e.which || null == window.selectedTaskDraggerElement) {
                         return;
                     }
-                    
-                    var selectedWiringTaskElement = window.selectedTaskDraggerElement.parentElement;
+
+                    e.preventDefault();
+
+                    var selectedWiringTaskElement = window.selectedTaskDraggerElement;
                     var selectedWiringTaskElementClientRect = selectedWiringTaskElement.getBoundingClientRect();
                     if ((e.movementX > 0 && e.clientX < selectedWiringTaskElementClientRect.left) ||
                         (e.movementX < 0 && e.clientX > selectedWiringTaskElementClientRect.right)) {
@@ -238,10 +263,10 @@
                         }
                     }
 
-                    window.maps[mapIndex].wiringPanels[currentPanelIndex].classList.remove("wiring-panel-selected");
                     window.maps[mapIndex].wiringTasks[taskIndex].panelIndex = newPanelIndex;
-                    window.maps[mapIndex].wiringPanels[newPanelIndex].classList.add("wiring-panel-selected");
                     window.maps[mapIndex].wiringTasks[taskIndex].taskElement.dataset["panelIndex"] = newPanelIndex;
+                    window.maps[mapIndex].wiringTasks[taskIndex].taskElement.firstElementChild.innerHTML =
+                        window.maps[mapIndex].wiringPanels[newPanelIndex].innerHTML;
                     delete window.maps[mapIndex].wiringTasks[taskIndex].taskElement.dataset["potentialNewPosition"];
                     var actualNewPosition = newPanelIndex * (window.maps[mapIndex].wiringPanels[1].offsetLeft - window.maps[mapIndex].wiringPanels[0].offsetLeft);
                     window.maps[mapIndex].wiringTasks[taskIndex].taskElement.style.left = actualNewPosition + "px";
@@ -256,11 +281,11 @@
             <h1>The Skeld</h1>
             <div class="wiring-container" style="width: calc(6 * (100px + 10px) + 5 * 10px);">
                 <div>
-                    <div class="wiring-panel wiring-panel-selected">Electrical</div>
+                    <div class="wiring-panel">Electrical</div>
                     <div class="wiring-panel-arrow">&#x25b6;</div>
-                    <div class="wiring-panel wiring-panel-selected">Storage</div>
+                    <div class="wiring-panel">Storage</div>
                     <div class="wiring-panel-arrow">&#x25b6;</div>
-                    <div class="wiring-panel wiring-panel-selected">Admin</div>
+                    <div class="wiring-panel">Admin</div>
                     <div class="wiring-panel-arrow">&#x25b6;</div>
                     <div class="wiring-panel">Navigation</div>
                     <div class="wiring-panel-arrow">&#x25b6;</div>
@@ -268,16 +293,19 @@
                     <div class="wiring-panel-arrow">&#x25b6;</div>
                     <div class="wiring-panel">Security</div>
 
-                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="0">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#1</div>
+                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="0" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">Electrical</div>
+                        <div class="wiring-task-dragger">#1</div>
                     </div>
 
-                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="0">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#2</div>
+                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="0" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">Storage</div>
+                        <div class="wiring-task-dragger">#2</div>
                     </div>
 
-                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="0">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#3</div>
+                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="0" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">Admin</div>
+                        <div class="wiring-task-dragger">#3</div>
                     </div>
                 </div>
             </div>
@@ -297,16 +325,19 @@
                     <div class="wiring-panel-arrow">&#x25b6;</div>
                     <div class="wiring-panel">Laboratory</div>
 
-                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="1">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#1</div>
+                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="1" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">Storage</div>
+                        <div class="wiring-task-dragger">#1</div>
                     </div>
 
-                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="1">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#2</div>
+                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="1" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">Hallway</div>
+                        <div class="wiring-task-dragger">#2</div>
                     </div>
 
-                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="1">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#3</div>
+                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="1" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">Locker</div>
+                        <div class="wiring-task-dragger">#3</div>
                     </div>
                 </div>
             </div>
@@ -328,16 +359,19 @@
                     <div class="wiring-panel-arrow">&#x25b6;</div>
                     <div class="wiring-panel">Laboratory<br />(left)</div>
 
-                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="2">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#1</div>
+                    <div class="wiring-task" style="left: calc(0 * 120px);" data-panel-index="0" data-task-index="0" data-map-index="2" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">Electrical</div>
+                        <div class="wiring-task-dragger">#1</div>
                     </div>
 
-                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="2">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#2</div>
+                    <div class="wiring-task" style="left: calc(1 * 120px);" data-panel-index="1" data-task-index="1" data-map-index="2" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">O2</div>
+                        <div class="wiring-task-dragger">#2</div>
                     </div>
 
-                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="2">
-                        <div class="wiring-task-dragger" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">#3</div>
+                    <div class="wiring-task" style="left: calc(2 * 120px);" data-panel-index="2" data-task-index="2" data-map-index="2" onmousedown="onTaskDraggerMouseDown(event)" onmouseup="onTaskDraggerMouseUp(event)">
+                        <div class="wiring-task-panel">Office</div>
+                        <div class="wiring-task-dragger">#3</div>
                     </div>
                 </div>
             </div>
