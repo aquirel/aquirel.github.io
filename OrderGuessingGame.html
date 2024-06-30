@@ -99,8 +99,8 @@
                         window.elements.shuffle();
                     } while (0 != evaluateGuess(window.guess, window.elements));
 
-                    let guessTBody = document.getElementById("guess-tbody");
-                    guessTBody.replaceChildren();
+                    let guessTr = document.getElementById("guess-tr");
+                    guessTr.replaceChildren();
 
                     let guessTemplate = document.getElementById("guess-template");
 
@@ -109,7 +109,7 @@
                         let guessTd = guessTdInstance.children[0];
                         guessTd.textContent = window.guess[i].toString();
                         guessTd.guessIndex = i;
-                        guessTBody.appendChild(guessTdInstance);
+                        guessTr.appendChild(guessTdInstance);
                     }
 
                     window.correctGuessCount = 0;
@@ -155,8 +155,8 @@
                     }
 
                     if (window.selectedGuessIndex != undefined) {
-                        let guessTBody = document.getElementById("guess-tbody");
-                        let selectedGuessTd = guessTBody.children[window.selectedGuessIndex];
+                        let guessTr = document.getElementById("guess-tr");
+                        let selectedGuessTd = guessTr.children[window.selectedGuessIndex];
                         selectedGuessTd.classList.replace("guess-selected-td", "guess-selectable-td");
 
                         let tmp = window.guess[window.selectedGuessIndex];
@@ -179,7 +179,7 @@
                             clearInterval(window.timeIntervalId);
                             window.timeIntervalId = null;
 
-                            for (let guessTd of guessTBody.children) {
+                            for (let guessTd of guessTr.children) {
                                 guessTd.classList.remove("guess-td");
                                 guessTd.classList.remove("guess-selectable-td");
                                 guessTd.classList.add("guess-gameover");
@@ -229,19 +229,17 @@
         </p>
 
         <table>
-            <tr>
-                <tbody id="guess-tbody">
-                    <td>1</td>
-                    <td>2</td>
-                    <td>3</td>
-                    <td>4</td>
-                    <td>5</td>
-                </tbody>
-
-                <template id="guess-template">
-                    <td class="guess-td guess-selectable-td" onclick="onGuessTdClick(event);">#</td>
-                </template>
+            <tr id="guess-tr">
+                <td>1</td>
+                <td>2</td>
+                <td>3</td>
+                <td>4</td>
+                <td>5</td>
             </tr>
+
+            <template id="guess-template">
+                <td class="guess-td guess-selectable-td" onclick="onGuessTdClick(event);">#</td>
+            </template>
         </table>
     </body>
 </html>
