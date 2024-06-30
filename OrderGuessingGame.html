@@ -72,7 +72,11 @@
                 "use strict";
 
                 function onStartNewGameButtonClick(e) {
-                    let numberOfElementsString = prompt("Enter number of elements", "5");
+                    if (isNaN(window.numberOfElements)) {
+                        window.numberOfElements = 5;
+                    }
+
+                    let numberOfElementsString = prompt("Enter number of elements", window.numberOfElements.toString());
                     if (numberOfElementsString == null) {
                         return;
                     }
