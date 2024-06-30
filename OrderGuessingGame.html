@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Order Guessing Game</title>
+        <link rel="icon" sizes="any" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASElEQVQ4y2NgoBAwIrH/U6CX4T+JBmCo/09AMU5xJiJswguYCGhmpMQARmICg4nSaBwGBrAQGYX/cQUsCzVjgdSkTN3MRDYAAKaJDxKzooRJAAAAAElFTkSuQmCC" />
+
+        <style type="text/css">
+            html {
+                background: black;
+                color: white;
+                font-size: 24px;
+            }
+
+            body {
+                text-align: center;
+            }
+
+            table {
+                margin: 0 auto;
+            }
+
+            button {
+                width: 200px;
+                height: 50px;
+                border-radius: 5px;
+                border-width: 2px;
+                font-size: 24px;
+                margin-top: 0.5em;
+            }
+
+            p {
+                margin-top: 0.5em;
+                margin-bottom: 0.5em;
+            }
+
+            td {
+                width: 75px;
+                height: 75px;
+                border-radius: 5px;
+                border: 2px solid white;
+                text-align: center;
+                vertical-align: middle;
+            }
+
+            td.guess-td {
+                cursor: pointer;
+            }
+
+            td.guess-selectable-td:hover, td.guess-selected-td:hover {
+                border-color: green;
+                color: green;
+            }
+
+            td.guess-selectable-td:active, td.guess-selected-td:active {
+                background: slategrey;
+            }
+
+            td.guess-selected-td {
+                background: darkslategrey;
+            }
+
+            td.guess-gameover {
+                border-color: green;
+                color: green;
+            }
+        </style>
+
+        <script type="application/javascript">
+            <!--
+                "use strict";
+
+                function onStartNewGameButtonClick(e) {
+                    let numberOfElementsString = prompt("Enter number of elements", "5");
+                    if (numberOfElementsString == null) {
+                        return;
+                    }
+
+                    window.numberOfElements = parseInt(numberOfElementsString);
+                    if (isNaN(window.numberOfElements) || (window.numberOfElements < 2) || (window.numberOfElements > 10)) {
+                        window.numberOfElements = 5;
+                    }
+
+                    window.elements = new Array(window.numberOfElements);
+                    window.guess = new Array(window.numberOfElements);
+
+                    for (let i = 0; i < window.numberOfElements; ++i) {
+                        let element = i + 1;
+                        window.elements[i] = element;
+                        window.guess[i] = element;
+                    }
+
+                    do {
+                        window.elements.shuffle();
+                    } while (0 != evaluateGuess(window.guess, window.elements));
+
+                    let guessTBody = document.getElementById("guess-tbody");
+                    guessTBody.replaceChildren();
+
+                    let guessTemplate = document.getElementById("guess-template");
+
+                    for (let i = 0; i < window.numberOfElements; ++i) {
+                        let guessTdInstance = document.importNode(guessTemplate.content, true);
+                        let guessTd = guessTdInstance.children[0];
+                        guessTd.textContent = window.guess[i].toString();
+                        guessTd.guessIndex = i;
+                        guessTBody.appendChild(guessTdInstance);
+                    }
+
+                    window.correctGuessCount = 0;
+                    document.getElementById("correct-guess-count-span").textContent = window.correctGuessCount.toString();
+
+                    document.getElementById("total-count-span").textContent = window.numberOfElements.toString();
+
+                    window.moveCount = 0;
+                    document.getElementById("move-count-span").textContent = window.moveCount.toString();
+
+                    if (window.timeIntervalId != undefined) {
+                        clearInterval(window.timeIntervalId);
+                        window.timeIntervalId = null;
+                    }
+
+                    document.getElementById("time-span").textContent = "00:00";
+                    window.timeIntervalId = setInterval(onTimeInterval, 1000);
+                    window.gameStartTimestamp = new Date();
+                }
+
+                function evaluateGuess(guess, elements) {
+                    let result = 0;
+                    for (let i = 0; i < elements.length; ++i) {
+                        if (guess[i] == elements[i]) {
+                            result++;
+                        }
+                    }
+                    return result;
+                }
+
+                function onTimeInterval() {
+                    let totalSecondsPassed = Math.floor((new Date() - window.gameStartTimestamp) / 1000);
+                    let minutesPassed = Math.floor(totalSecondsPassed / 60).toString().padStart(2, '0');
+                    let secondsPassed = (totalSecondsPassed % 60).toString().padStart(2, '0');
+                    document.getElementById("time-span").textContent = `${minutesPassed}:${secondsPassed}`;
+                }
+
+                function onGuessTdClick(e) {
+                    if (e.target.classList.contains("guess-selected-td")) {
+                        e.target.classList.replace("guess-selected-td", "guess-selectable-td");
+                        window.selectedGuessIndex = null;
+                        return;
+                    }
+
+                    if (window.selectedGuessIndex != undefined) {
+                        let guessTBody = document.getElementById("guess-tbody");
+                        let selectedGuessTd = guessTBody.children[window.selectedGuessIndex];
+                        selectedGuessTd.classList.replace("guess-selected-td", "guess-selectable-td");
+
+                        let tmp = window.guess[window.selectedGuessIndex];
+                        window.guess[window.selectedGuessIndex] = window.guess[e.target.guessIndex];
+                        window.guess[e.target.guessIndex] = tmp;
+
+                        tmp = selectedGuessTd.textContent;
+                        selectedGuessTd.textContent = e.target.textContent;
+                        e.target.textContent = tmp;
+
+                        window.selectedGuessIndex = null;
+
+                        window.moveCount++;
+                        document.getElementById("move-count-span").textContent = window.moveCount.toString();
+
+                        window.correctGuessCount = evaluateGuess(window.guess, window.elements);
+                        document.getElementById("correct-guess-count-span").textContent = window.correctGuessCount.toString();
+
+                        if (window.correctGuessCount == window.numberOfElements) {
+                            clearInterval(window.timeIntervalId);
+                            window.timeIntervalId = null;
+
+                            for (let guessTd of guessTBody.children) {
+                                guessTd.classList.remove("guess-td");
+                                guessTd.classList.remove("guess-selectable-td");
+                                guessTd.classList.add("guess-gameover");
+                                guessTd.onclick = null;
+                            }
+                        }
+
+                        return;
+                    }
+
+                    e.target.classList.replace("guess-selectable-td", "guess-selected-td");
+                    window.selectedGuessIndex = e.target.guessIndex;
+                }
+
+                Array.prototype.shuffle = function () {
+                    if (this.length <= 1) {
+                        return;
+                    }
+
+                    for (let i = 0; i < this.length - 1; ++i) {
+                        let j = i + Math.floor(Math.random() * (this.length - i));
+
+                        let tmp = this[i];
+                        this[i] = this[j];
+                        this[j] = tmp;
+                    }
+                }
+            -->
+        </script>
+    </head>
+
+    <body>
+        <p>
+            <button type="button" title="Start new game" onclick="onStartNewGameButtonClick(event);">Start Game</button>
+        </p>
+
+        <p>
+            Correct: <span id="correct-guess-count-span">0</span>/<span id="total-count-span">5</span>
+        </p>
+
+        <p>
+            Moves: <span id="move-count-span">0</span>
+        </p>
+
+        <p>
+            Time: <span id="time-span">00:00</span>
+        </p>
+
+        <table>
+            <tr>
+                <tbody id="guess-tbody">
+                    <td>1</td>
+                    <td>2</td>
+                    <td>3</td>
+                    <td>4</td>
+                    <td>5</td>
+                </tbody>
+
+                <template id="guess-template">
+                    <td class="guess-td guess-selectable-td" onclick="onGuessTdClick(event);">#</td>
+                </template>
+            </tr>
+        </table>
+    </body>
+</html>
