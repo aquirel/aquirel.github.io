@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Order Guessing Game With a Twist</title>
+        <link rel="icon" sizes="any" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAb0lEQVQ4y61TSRLAIAwKTv7/ZXqqk2bT0ebkBQIBRS4H5s0TLCyYBQeIai0mgQVDkO9kIIFGXQhKpgJEo2MJtmroruYJMjWrGR2YG8GUBNxMddwWSbf8o66aetmv908vmhg18x6u3yj4rcrHn+l6HnORJSICWFDHAAAAAElFTkSuQmCC" />
+
+        <style type="text/css">
+            html {
+                background: black;
+                color: white;
+                font-size: 24px;
+            }
+
+            body {
+                text-align: center;
+            }
+
+            table {
+                margin: 0 auto;
+            }
+
+            button {
+                width: 200px;
+                height: 50px;
+                border-radius: 5px;
+                border-width: 2px;
+                font-size: 24px;
+                margin-top: 0.5em;
+            }
+
+            p {
+                margin-top: 0.5em;
+                margin-bottom: 0.5em;
+            }
+
+            td {
+                width: 75px;
+                height: 75px;
+                border-radius: 5px;
+                border: 2px solid white;
+                text-align: center;
+                vertical-align: middle;
+            }
+
+            td.guess-td {
+                cursor: pointer;
+            }
+
+            td.guess-selectable-td:hover, td.guess-selected-td:hover {
+                border-color: green;
+                color: green;
+            }
+
+            td.guess-selectable-td:active, td.guess-selected-td:active {
+                background: slategrey;
+            }
+
+            td.guess-selected-td {
+                background: darkslategrey;
+            }
+
+            td.guess-gameover {
+                border-color: green;
+                color: green;
+            }
+
+            canvas {
+                background: black;
+            }
+
+            button.hidden-button {
+                display: none;
+            }
+        </style>
+
+        <script type="application/javascript">
+            <!--
+                "use strict";
+
+                Array.prototype.shuffle = function () {
+                    if (this.length <= 1) {
+                        return;
+                    }
+
+                    for (let i = 0; i < this.length - 1; ++i) {
+                        let j = i + Math.floor(Math.random() * (this.length - i));
+
+                        let tmp = this[i];
+                        this[i] = this[j];
+                        this[j] = tmp;
+                    }
+                }
+
+                function lerp(a, b, t) {
+                    return a + t * (b - a);
+                }
+
+                function clip(a, b, v) {
+                    if (v < a) {
+                        return a;
+                    }
+                    else if (v > b) {
+                        return b;
+                    }
+                    else {
+                        return v;
+                    }
+                }
+                
+                function inRange(a, b, v) {
+                    return (a <= v) && (v <= b);
+                }
+
+                function makeVector(x, y) {
+                    return [ x, y ];
+                }
+                
+                function vectorCopy(v) {
+                    return [ v[0], v[1] ];
+                }
+
+                function vectorLength(v) {
+                    return Math.sqrt(Math.pow(v[0], 2) + Math.pow(v[1], 2));
+                }
+
+                function vectorAdd(a, b) {
+                    return makeVector(a[0] + b[0], a[1] + b[1]);
+                }
+
+                function vectorSubtract(a, b) {
+                    return makeVector(a[0] - b[0], a[1] - b[1]);
+                }
+                
+                function vectorDistance(a, b) {
+                    return vectorLength(vectorSubtract(a, b));
+                }
+
+                function vectorLerp(a, b, t) {
+                    return makeVector(lerp(a[0], b[0], t), lerp(a[1], b[1], t));
+                }
+
+                function vectorClip(a, b, v) {
+                    return makeVector(clip(a[0], b[0], v[0]), clip(a[1], b[1], v[1]));
+                }
+
+                function doesRectangleContainPoint(topLeft, bottomRight, point) {
+                    return inRange(topLeft[0], bottomRight[0], point[0]) &&
+                        inRange(topLeft[1], bottomRight[1], point[1]);
+                }
+
+                function vectorScale(v, t) {
+                    return makeVector(v[0] * t, v[1] * t);
+                }
+
+                function vectorNormalize(v) {
+                    return vectorScale(v, 1 / vectorLength(v));
+                }
+
+                function vectorInvert(v) {
+                    return vectorScale(v, -1);
+                }
+
+                function vectorDotProduct(a, b) {
+                    return a[0] * b[0] + a[1] * b[1];
+                }
+
+                function evaluateGuess(guess, elements) {
+                    let result = 0;
+                    for (let i = 0; i < elements.length; ++i) {
+                        if (guess[i] == elements[i]) {
+                            result++;
+                        }
+                    }
+                    return result;
+                }
+
+                function onStartNewGameButtonClick(e) {
+                    if (isNaN(window.numberOfElements)) {
+                        window.numberOfElements = 5;
+                    }
+
+                    let numberOfElementsString = prompt("Enter number of elements", window.numberOfElements.toString());
+                    if (numberOfElementsString == null) {
+                        return;
+                    }
+
+                    window.numberOfElements = parseInt(numberOfElementsString);
+                    if (isNaN(window.numberOfElements) || (window.numberOfElements < 2) || (window.numberOfElements > 10)) {
+                        window.numberOfElements = 5;
+                    }
+
+                    window.elements = new Array(window.numberOfElements);
+                    window.guess = new Array(window.numberOfElements);
+
+                    for (let i = 0; i < window.numberOfElements; ++i) {
+                        let element = i + 1;
+                        window.elements[i] = element;
+                        window.guess[i] = element;
+                    }
+
+                    do {
+                        window.elements.shuffle();
+                    } while (0 != evaluateGuess(window.guess, window.elements));
+
+                    let guessTr = document.getElementById("guess-tr");
+                    guessTr.replaceChildren();
+
+                    let guessTemplate = document.getElementById("guess-template");
+
+                    for (let i = 0; i < window.numberOfElements; ++i) {
+                        let guessTdInstance = document.importNode(guessTemplate.content, true);
+                        let guessTd = guessTdInstance.children[0];
+                        guessTd.textContent = window.guess[i].toString();
+                        guessTd.guessIndex = i;
+                        guessTr.appendChild(guessTdInstance);
+                    }
+
+                    window.correctGuessCount = 0;
+                    document.getElementById("correct-guess-count-span").textContent = window.correctGuessCount.toString();
+
+                    document.getElementById("total-count-span").textContent = window.numberOfElements.toString();
+
+                    window.moveCount = 0;
+                    document.getElementById("move-count-span").textContent = window.moveCount.toString();
+
+                    window.canvasElement = document.getElementById("canvas");
+                    canvasElement.width = document.getElementById("guess-table").clientWidth;
+
+                    window.context = canvasElement.getContext(
+                        "2d",
+                        {
+                            alpha: false,
+                            desynchronized: true,
+                            powerPreference: "high-performance",
+                            preserveDrawingBuffer: true
+                        });
+                    window.context.width = canvasElement.width;
+                    window.context.height = canvasElement.height;
+
+                    window.scene = makeScene(window.context.width, window.context.height, window.numberOfElements);
+
+                    document.getElementById("drop-ball-button").removeAttribute("disabled");
+                    document.getElementById("drop-ball-button").classList.remove("hidden-button");
+
+                    if (window.timeIntervalId != undefined) {
+                        clearInterval(window.timeIntervalId);
+                        window.timeIntervalId = null;
+                    }
+
+                    document.getElementById("time-span").textContent = "00:00";
+                    window.timeIntervalId = setInterval(onTimeInterval, 1000);
+                    window.gameStartTimestamp = new Date();
+
+                    if (window.rafId != undefined) {
+                        window.cancelAnimationFrame(window.rafId);
+                        window.rafId = null;
+                    }
+
+                    window.t0 = document.timeline.currentTime;
+                    window.rafId = window.requestAnimationFrame(t => onSceneTick(t, window.t0));
+                }
+
+                function onGuessTdClick(e) {
+                    if (e.target.classList.contains("guess-selected-td")) {
+                        e.target.classList.replace("guess-selected-td", "guess-selectable-td");
+                        window.selectedGuessIndex = null;
+                        return;
+                    }
+
+                    if (window.selectedGuessIndex != undefined) {
+                        let guessTr = document.getElementById("guess-tr");
+                        let selectedGuessTd = guessTr.children[window.selectedGuessIndex];
+                        selectedGuessTd.classList.replace("guess-selected-td", "guess-selectable-td");
+
+                        let tmp = window.guess[window.selectedGuessIndex];
+                        window.guess[window.selectedGuessIndex] = window.guess[e.target.guessIndex];
+                        window.guess[e.target.guessIndex] = tmp;
+
+                        tmp = selectedGuessTd.textContent;
+                        selectedGuessTd.textContent = e.target.textContent;
+                        e.target.textContent = tmp;
+
+                        window.selectedGuessIndex = null;
+
+                        window.moveCount++;
+                        document.getElementById("move-count-span").textContent = window.moveCount.toString();
+
+                        window.correctGuessCount = evaluateGuess(window.guess, window.elements);
+                        document.getElementById("correct-guess-count-span").textContent = window.correctGuessCount.toString();
+
+                        if (window.correctGuessCount == window.numberOfElements) {
+                            clearInterval(window.timeIntervalId);
+                            window.timeIntervalId = null;
+
+                            for (let guessTd of guessTr.children) {
+                                guessTd.classList.remove("guess-td");
+                                guessTd.classList.remove("guess-selectable-td");
+                                guessTd.classList.add("guess-gameover");
+                                guessTd.onclick = null;
+                            }
+                        }
+                        else {
+                            for (let guessTd of guessTr.children) {
+                                guessTd.classList.remove("guess-td");
+                                guessTd.classList.remove("guess-selectable-td");
+                                guessTd.onclick = null;
+                            }
+
+                            scene.ball = makeBall(scene);
+                            document.getElementById("drop-ball-button").removeAttribute("disabled");
+
+                            if (window.rafId != undefined) {
+                                window.cancelAnimationFrame(window.rafId);
+                                window.rafId = null;
+                            }
+
+                            window.t0 = document.timeline.currentTime;
+                            window.rafId = window.requestAnimationFrame(t => onSceneTick(t, window.t0));
+                        }
+
+                        return;
+                    }
+
+                    e.target.classList.replace("guess-selectable-td", "guess-selected-td");
+                    window.selectedGuessIndex = e.target.guessIndex;
+                }
+
+                function onDropBallButtonClick(event) {
+                    document.getElementById("drop-ball-button").setAttribute("disabled", "disabled");
+                    window.scene.ball.isFree = true;
+                }
+
+                function onTimeInterval() {
+                    let totalSecondsPassed = Math.floor((new Date() - window.gameStartTimestamp) / 1000);
+                    let minutesPassed = Math.floor(totalSecondsPassed / 60).toString().padStart(2, '0');
+                    let secondsPassed = (totalSecondsPassed % 60).toString().padStart(2, '0');
+                    document.getElementById("time-span").textContent = `${minutesPassed}:${secondsPassed}`;
+                }
+
+                function makeScene(sceneWidth, sceneHeight, numberOfElements) {
+                    let result = {
+                        width: sceneWidth,
+                        height: sceneHeight,
+                        topLeft: makeVector(0, 0),
+                        bottomRight: makeVector(sceneWidth, sceneHeight),
+                        numberOfElements: numberOfElements,
+                        ball: null,
+                        ballCounter: 0,
+                        walls: [],
+                        staticBalls: [],
+                        scoringAreas: []
+                    };
+
+                    result.ball = makeBall(result);
+
+                    let topRight = makeVector(sceneWidth, 0);
+                    let bottomLeft = makeVector(0, sceneHeight);
+
+                    result.walls.push(makeWall(result.topLeft, topRight));
+                    result.walls.push(makeWall(topRight, result.bottomRight));
+                    result.walls.push(makeWall(result.bottomRight, bottomLeft));
+                    result.walls.push(makeWall(bottomLeft, result.topLeft));
+
+                    let sectorWidth = sceneWidth / numberOfElements;
+                    for (let i = 1; i < numberOfElements; ++i) {
+                        let wallBase = vectorAdd(bottomLeft, makeVector(i * sectorWidth, 0));
+                        result.walls.push(makeWall(wallBase, vectorAdd(wallBase, makeVector(0, -0.5 * sceneHeight))));
+                    }
+
+                    for (let i = 0; i < numberOfElements; ++i) {
+                        let scoringAreaTopLeft = vectorAdd(bottomLeft, makeVector(i * sectorWidth, -0.5 * sceneHeight));
+                        result.scoringAreas.push(
+                            makeScoringArea(
+                                scoringAreaTopLeft,
+                                vectorAdd(bottomLeft, makeVector((i + 1) * sectorWidth, 0)),
+                                (0 == (i % 2)) ? "magenta" : "green"));
+                    }
+
+                    return result;
+                }
+
+                function makeBall(scene) {
+                    let ballRadius = 0.75 * scene.width / scene.numberOfElements / 2;
+
+                    return {
+                        radius: ballRadius,
+                        position: makeVector(scene.width / 2, ballRadius * 1.5),
+                        previousPositions: [],
+                        maxPreviousPositions: 20,
+                        futurePositions: [],
+                        maxFuturePositions: 100,
+                        velocity: makeVector(0, 0),
+                        isFree: false,
+                        isStatic: false,
+                        firstCollisionTimestamp: null,
+                        color: (0 == (scene.ballCounter++ % 2)) ? "magenta" : "green"
+                    };
+                }
+
+                function makeWall(a, b) {
+                    return [ a, b ];
+                }
+
+                function makeScoringArea(topLeft, bottomRight, color) {
+                    return {
+                        topLeft: topLeft,
+                        bottomRight: bottomRight,
+                        color: color
+                    };
+                }
+
+                function isPointOnLine(point, line) {
+                    let d1 = vectorDistance(point, line[0]);
+                    let d2 = vectorDistance(point, line[1]);
+                    let lineLength = vectorDistance(line[0], line[1]);
+                    return Math.abs((d1 + d2) - lineLength) <= 0.01;
+                }
+
+                function makeCollision(normalVector, penetration) {
+                    if (isNaN(penetration) || isNaN(normalVector[0]) || isNaN(normalVector[1])) {
+                        return null;
+                    }
+
+                    return {
+                        normalVector: normalVector,
+                        penetration: penetration
+                    };
+                }
+
+                function checkBallVsPointCollision(ballPosition, radius, point) {
+                    let v = vectorSubtract(ballPosition, point);
+                    let distance = vectorLength(v);
+                    if (distance >= radius) {
+                        return null;
+                    }
+                    else {
+                        let normalVector = vectorScale(v, 1 / distance);
+                        return makeCollision(normalVector, radius - distance);
+                    }
+                }
+
+                function checkBallVsStaticBallCollision(ballPosition, radius, staticBall) {
+                    let v = vectorSubtract(ballPosition, staticBall.position);
+                    let distance = vectorLength(v);
+                    if (distance >= (radius + staticBall.radius)) {
+                        return null;
+                    }
+                    else {
+                        let normalVector = vectorScale(v, 1 / distance);
+                        return makeCollision(normalVector, radius + staticBall.radius - distance);
+                    }
+                }
+
+                function checkBallVsWallCollision(ballPosition, radius, wall) {
+                    let collision = checkBallVsPointCollision(ballPosition, radius, wall[0]);
+                    if (collision != null) {
+                        return collision;
+                    }
+
+                    collision = checkBallVsPointCollision(ballPosition, radius, wall[1]);
+                    if (collision != null) {
+                        return collision;
+                    }
+
+                    let wallVector = vectorSubtract(wall[1], wall[0]);
+                    let wallLength = vectorLength(wallVector);
+                    let wallToBallVector = vectorSubtract(ballPosition, wall[0]);
+                    let dot = vectorDotProduct(wallVector, wallToBallVector) / Math.pow(wallLength, 2);
+                    let pointOnWall = makeVector(wall[0][0] + dot * (wall[1][0] - wall[0][0]), wall[0][1] + dot * (wall[1][1] - wall[0][1]));
+
+                    if (!isPointOnLine(pointOnWall, wall)) {
+                        return null
+                    }
+
+                    let v = vectorSubtract(ballPosition, pointOnWall);
+                    let distance = vectorLength(v);
+                    if (distance >= radius) {
+                        return null;
+                    }
+                    else {
+                        let normalVector = vectorScale(v, 1 / distance);
+                        return makeCollision(normalVector, radius - distance);
+                    }
+                }
+
+                function checkBallVsScoringAreaCollision(ballPosition, radius, scoringArea) {
+                    let testPoint = vectorCopy(ballPosition);
+
+                    if (ballPosition[0] < scoringArea.topLeft[0]) {
+                        testPoint[0] = scoringArea.topLeft[0];
+                    }
+                    else if (ballPosition[0] > scoringArea.bottomRight[0]) {
+                        testPoint[0] = scoringArea.bottomRight[0];
+                    }
+
+                    if (ballPosition[1] < scoringArea.topLeft[1]) {
+                        testPoint[1] = scoringArea.topLeft[1];
+                    }
+                    else if (ballPosition[1] > scoringArea.bottomRight[1]) {
+                        testPoint[1] = scoringArea.bottomRight[1];
+                    }
+
+                    let v = vectorSubtract(ballPosition, testPoint);
+                    let distance = vectorLength(v);
+                    if (distance >= radius) {
+                        return null;
+                    }
+                    else {
+                        let normalVector = vectorNormalize(
+                            vectorSubtract(
+                                ballPosition,
+                                vectorLerp(scoringArea.topLeft, scoringArea.bottomRight, 0.5)));
+                        return makeCollision(normalVector, radius - distance);
+                    }
+                }
+
+                function checkBallVsSceneCollision(ballPosition, radius, scene) {
+                    for (let wall of scene.walls) {
+                        let collision = checkBallVsWallCollision(ballPosition, radius, wall);
+                        if (collision != null) {
+                            return collision;
+                        }
+                    }
+
+                    for (let staticBall of scene.staticBalls) {
+                        let collision = checkBallVsStaticBallCollision(ballPosition, radius, staticBall);
+                        if (collision != null) {
+                            return collision;
+                        }
+                    }
+
+                    return null;
+                }
+
+                function onSceneTick(t, prevT) {
+                    let dt = t - prevT;
+                    let elapsed = t - window.t0;
+                    updateScene(window.scene, dt, elapsed);
+                    drawScene(window.context, window.scene);
+
+                    if (window.scene.ball != null) {
+                        window.rafId = window.requestAnimationFrame(newT => onSceneTick(newT, t));
+                    }
+                    else {
+                        window.rafId = null;
+                    }
+                }
+
+                function updateScene(scene, dt, elapsed) {
+                    let ball = scene.ball;
+
+                    if (!ball.isFree) {
+                        let previousPosition = ball.position[0];
+                        ball.position[0] = 0.5 * scene.width;
+                        ball.position[0] += (0.5 * scene.width - ball.radius * 1.2) * Math.sin(elapsed / 1000 * 0.5 * Math.PI / 2);
+                        ball.velocity[0] = (ball.position[0] - previousPosition) / dt;
+
+                        ball.futurePositions.length = 0;
+                        calculateFutureBallPositions(scene, ball, elapsed, 10);
+                    }
+                    else if (ball.futurePositions.length >= 2) {
+                        while ((ball.futurePositions.length >= 2) && (elapsed > ball.futurePositions[1].elapsed)) {
+                            ball.futurePositions.splice(0, 1);
+
+                            if (!ball.isStatic) {
+                                let lastFutureCalculatedPosition = ball.futurePositions[ball.futurePositions.length - 1];
+                                calculateFutureBallPositions(scene, ball, lastFutureCalculatedPosition.elapsed, 10);
+                            }
+                        }
+
+                        if (ball.futurePositions.length >= 2) {
+                            let currentFuturePosition = ball.futurePositions[0];
+                            let nextFuturePosition = ball.futurePositions[1];
+                            let t = (elapsed - currentFuturePosition.elapsed) / (nextFuturePosition.elapsed - currentFuturePosition.elapsed);
+
+                            ball.position = vectorLerp(currentFuturePosition.position, nextFuturePosition.position, t);
+                            ball.velocity = vectorLerp(currentFuturePosition.velocity, nextFuturePosition.velocity, t);
+                        }
+                    }
+                    else {
+                        ball.previousPositions.length = 0;
+                        scene.staticBalls.push(ball);
+                        scene.ball = null;
+
+                        let scoringArea = getBallScoringArea(ball, scene);
+                        if (scoringArea != null) {
+                            if (scoringArea.color != ball.color) {
+                                scene.ball = makeBall(scene);
+                                document.getElementById("drop-ball-button").removeAttribute("disabled");
+                            }
+                            else {
+                                let guessTr = document.getElementById("guess-tr");
+                                for (let guessTd of guessTr.children) {
+                                    guessTd.classList.add("guess-td");
+                                    guessTd.classList.add("guess-selectable-td");
+                                    guessTd.onclick = onGuessTdClick;
+                                }
+                            }
+                        }
+
+                        return;
+                    }
+
+                    if (ball.previousPositions.length >= ball.maxPreviousPositions) {
+                        ball.previousPositions.splice(0, ball.previousPositions.length - ball.maxPreviousPositions + 1);
+                    }
+
+                    ball.previousPositions.push(vectorCopy(ball.position));
+                }
+
+                function calculateFutureBallPositions(scene, ball, elapsed, dt) {
+                    if (null != checkBallVsSceneCollision(ball.position, ball.radius, scene)) {
+                        return;
+                    }
+
+                    while (ball.futurePositions.length < ball.maxFuturePositions) {
+                        let lastFutureCalculatedPosition = null;
+                        if (ball.futurePositions.length == 0) {
+                            lastFutureCalculatedPosition = makeFutureBallPosition(ball.position, ball.velocity, elapsed, 0, 0);
+                        }
+                        else {
+                            lastFutureCalculatedPosition = ball.futurePositions[ball.futurePositions.length - 1];
+                        }
+
+                        let nextPosition = vectorAdd(lastFutureCalculatedPosition.position, vectorScale(lastFutureCalculatedPosition.velocity, dt));
+                        let nextVelocity = null;
+
+                        let hadCollision = false;
+                        while (true) {
+                            let collision = checkBallVsSceneCollision(nextPosition, ball.radius, scene);
+                            if (collision == null) {
+                                break;
+                            }
+
+                            hadCollision = true;
+
+                            if (ball.isFree) {
+                                if (ball.firstCollisionTimestamp == null) {
+                                    ball.firstCollisionTimestamp = elapsed;
+                                }
+                                else if ((elapsed - ball.firstCollisionTimestamp) > 15000) {
+                                    ball.isStatic = true;
+                                    return;
+                                }
+                            }
+
+                            if (collision.penetration <= 0.001) {
+                                nextPosition = vectorCopy(lastFutureCalculatedPosition.position);
+                            }
+                            else {
+                                let resolutionVector = vectorScale(collision.normalVector, collision.penetration);
+                                nextPosition = vectorAdd(nextPosition, resolutionVector);
+                            }
+
+                            nextVelocity = vectorSubtract(lastFutureCalculatedPosition.velocity, vectorScale(collision.normalVector, 2 * vectorDotProduct(lastFutureCalculatedPosition.velocity, collision.normalVector)));
+                            nextVelocity = vectorScale(nextVelocity, 0.8);
+                            nextVelocity[1] += 10 / 1000 * 0.8;
+                        }
+
+                        if (!hadCollision) {
+                            nextVelocity = vectorCopy(lastFutureCalculatedPosition.velocity);
+                            nextVelocity[1] += 10 / 1000;
+                        }
+
+                        let dp = vectorDistance(nextPosition, lastFutureCalculatedPosition.position);
+                        let staticCounter = lastFutureCalculatedPosition.staticCounter;
+                        if (dp <= 0.1) {
+                            staticCounter++;
+                        }
+                        else {
+                            staticCounter = 0;
+                        }
+
+                        if (staticCounter >= 50) {
+                            ball.isStatic = true;
+                            return;
+                        }
+
+                        ball.futurePositions.push(makeFutureBallPosition(nextPosition, nextVelocity, lastFutureCalculatedPosition.elapsed + dt, staticCounter));
+                    }
+                }
+
+                function makeFutureBallPosition(position, velocity, elapsed, staticCounter) {
+                    return {
+                        position: position,
+                        velocity: velocity,
+                        elapsed: elapsed,
+                        staticCounter: staticCounter
+                    };
+                }
+
+                function getBallScoringArea(ball, scene) {
+                    for (let scoringArea of scene.scoringAreas) {
+                        if (null != checkBallVsScoringAreaCollision(ball.position, ball.radius, scoringArea)) {
+                            return scoringArea;
+                        }
+                    }
+
+                    return null;
+                }
+
+                function drawScene(context, scene) {
+                    context.clearRect(0, 0, context.width, context.height);
+
+                    for (let scoringArea of scene.scoringAreas) {
+                        drawScoringArea(context, scoringArea);
+                    }
+
+                    for (let staticBall of scene.staticBalls) {
+                        drawStaticBall(context, staticBall);
+                    }
+
+                    if (scene.ball != null) {
+                        drawBall(context, scene.ball);
+                    }
+
+                    for (let wall of scene.walls) {
+                        drawWall(context, wall);
+                    }
+                }
+
+                function drawScoringArea(context, scoringArea) {
+                    context.save();
+
+                    context.fillStyle = scoringArea.color;
+                    context.fillRect(
+                        scoringArea.topLeft[0],
+                        scoringArea.topLeft[1],
+                        scoringArea.bottomRight[0] - scoringArea.topLeft[0],
+                        scoringArea.bottomRight[1] - scoringArea.topLeft[1]);
+
+                    context.restore();
+                }
+
+                function drawBall(context, ball) {
+                    context.save();
+
+                    context.lineWidth = 2;
+                    context.fillStyle = "white";
+
+                    if (ball.previousPositions.length > 0) {
+                        context.save();
+
+                        context.strokeStyle = "darkgrey";
+                        let alphaStep = 1 / (ball.previousPositions.length + 1);
+                        context.globalAlpha = 0;
+
+                        for (let i = 0; i < ball.previousPositions.length; ++i) {
+                            context.globalAlpha += alphaStep;
+                            drawBallBody(context, ball.previousPositions[i], ball.radius, /* isPreviousPosition: */ true);
+                        }
+
+                        context.restore();
+                    }
+
+                    if (ball.futurePositions.length > 0) {
+                        context.save();
+
+                        context.lineWidth = 2;
+                        context.strokeStyle = "darkgrey";
+
+                        let alphaStep = 1 / (ball.futurePositions.length + 1);
+                        context.globalAlpha = 1;
+    
+                        let previousPosition = ball.position;
+                        for (let i = 0; i < ball.futurePositions.length; ++i) {
+                            context.globalAlpha -= alphaStep;
+                            context.beginPath();
+                            context.moveTo(previousPosition[0], previousPosition[1]);
+                            let futurePosition = ball.futurePositions[i].position;
+                            context.lineTo(futurePosition[0], futurePosition[1]);
+                            previousPosition = futurePosition;
+                            context.stroke();
+                        }
+
+                        context.restore();
+                    }
+
+                    context.fillStyle = ball.color;
+                    context.strokeStyle = "lightgrey";
+                    drawBallBody(context, ball.position, ball.radius, /* isPreviousPosition: */ false);
+
+                    context.lineWidth = 2;
+                    context.strokeStyle = "lightgreen";
+
+                    context.translate(ball.position[0], ball.position[1]);
+
+                    context.beginPath();
+
+                    let velocity = vectorLength(ball.velocity);
+
+                    if (velocity < 0.05) {
+                        context.moveTo(0, 0);
+                        context.lineTo(ball.velocity[0] * 0.5 * scene.width, ball.velocity[1] * 0.5 * scene.width);
+                    }
+                    else
+                    {
+                        context.rotate(Math.atan2(ball.velocity[1], ball.velocity[0]));
+
+                        let velocityArrowSize = velocity * 0.5 * scene.width;
+
+                        context.moveTo(0, 0);
+                        context.lineTo(velocityArrowSize, 0);
+
+                        context.moveTo(velocityArrowSize, 0);
+                        context.lineTo(velocityArrowSize - 8, -2.5);
+
+                        context.moveTo(velocityArrowSize, 0);
+                        context.lineTo(velocityArrowSize - 8, +2.5);
+                    }
+
+                    context.stroke();
+
+                    context.restore();
+                }
+
+                function drawStaticBall(context, ball) {
+                    context.save();
+
+                    context.lineWidth = 2;
+                    context.fillStyle = "dark" + ball.color;
+                    context.strokeStyle = "lightgrey";
+
+                    drawBallBody(context, ball.position, ball.radius, /* isPreviousPosition: */ false);
+
+                    context.restore();
+                }
+
+                function drawBallBody(context, position, radius, isPreviousPosition) {
+                    context.beginPath();
+                    context.ellipse(
+                        position[0],
+                        position[1],
+                        radius,
+                        radius,
+                        0,
+                        0,
+                        Math.PI * 2);
+
+                    if (!isPreviousPosition) {
+                        context.fill();
+                    }
+
+                    context.stroke();
+                }
+                
+                function drawWall(context, wall) {
+                    context.save();
+
+                    context.lineWidth = 2;
+                    context.strokeStyle = "white";
+
+                    context.beginPath();
+                    context.moveTo(wall[0][0], wall[0][1]);
+                    context.lineTo(wall[1][0], wall[1][1]);
+                    context.stroke();
+
+                    context.restore();
+                }
+            -->
+        </script>
+    </head>
+
+    <body>
+        <p>
+            <button type="button" title="Start new game" onclick="onStartNewGameButtonClick(event);">Start Game</button>
+        </p>
+
+        <p>
+            Correct: <span id="correct-guess-count-span">0</span>/<span id="total-count-span">5</span>
+        </p>
+
+        <p>
+            Moves: <span id="move-count-span">0</span>
+        </p>
+
+        <p>
+            Time: <span id="time-span">00:00</span>
+        </p>
+
+        <table id="guess-table">
+            <tr id="guess-tr">
+                <td>1</td>
+                <td>2</td>
+                <td>3</td>
+                <td>4</td>
+                <td>5</td>
+            </tr>
+
+            <template id="guess-template">
+                <td>#</td>
+            </template>
+        </table>
+
+        <p>
+            <canvas id="canvas" width="640" height="480"></canvas>
+        </p>
+
+        <p>
+            <button id="drop-ball-button" type="button" title="Drop ball" onclick="onDropBallButtonClick(event);" class="hidden-button">Drop Ball</button>
+        </p>
+    </body>
+</html>
